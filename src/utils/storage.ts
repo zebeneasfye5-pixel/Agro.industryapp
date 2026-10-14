@@ -26,7 +26,8 @@ const STORAGE_KEYS = {
   RECEIPTS: 'arso_ader_receipts_v1',
   CROPS: 'arso_ader_crops_v1',
   INQUIRIES: 'arso_ader_inquiries_v1',
-  CREATOR_WALLET: 'arso_ader_creator_wallet_v1',
+  CREATOR_WALLET: 'arso_ader_creator_wallet_v2',
+  CREATOR_PIN: 'arso_ader_creator_pin_v1',
   INSTITUTIONS: 'arso_ader_institutions_v1',
   LANGUAGE: 'arso_ader_lang_v1',
   ROLE: 'arso_ader_role_v1',
@@ -175,3 +176,31 @@ export function saveInstitutions(institutions: InstitutionNode[]): void {
     console.error('Failed to save institutions', e);
   }
 }
+
+export function getStoredCreatorPin(): string {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CREATOR_PIN);
+    if (raw) return raw;
+  } catch (e) {
+    console.error('Failed to load PIN', e);
+  }
+  return '2026'; // Default secret owner PIN
+}
+
+export function saveCreatorPin(pin: string): void {
+  try {
+    localStorage.setItem(STORAGE_KEYS.CREATOR_PIN, pin);
+  } catch (e) {
+    console.error('Failed to save PIN', e);
+  }
+}
+
+export function resetProductionData(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.CREATOR_WALLET);
+    localStorage.removeItem(STORAGE_KEYS.INQUIRIES);
+  } catch (e) {
+    console.error('Failed to reset production data', e);
+  }
+}
+

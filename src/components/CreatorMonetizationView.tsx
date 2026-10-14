@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CreatorWallet, WithdrawalTransaction, Language } from '../types';
 import { audioService } from '../utils/audio';
+import { getStoredCreatorPin, saveCreatorPin } from '../utils/storage';
 import confetti from 'canvas-confetti';
 import {
   Wallet,
@@ -20,6 +21,13 @@ import {
   Smartphone,
   ChevronRight,
   Sparkles,
+  Lock,
+  Unlock,
+  KeyRound,
+  Eye,
+  EyeOff,
+  ShieldAlert,
+  UserCheck,
 } from 'lucide-react';
 
 interface CreatorMonetizationViewProps {
@@ -33,13 +41,28 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
   onUpdateWallet,
   currentLang,
 }) => {
+  // Secret PIN Security Gate
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [inputPin, setInputPin] = useState('');
+  const [pinError, setPinError] = useState(false);
+  const [showPinText, setShowPinText] = useState(false);
+
+  // Change PIN modal state
+  const [isChangePinOpen, setIsChangePinOpen] = useState(false);
+  const [currentPinCheck, setCurrentPinCheck] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmNewPin, setConfirmNewPin] = useState('');
+  const [pinChangeSuccess, setPinChangeSuccess] = useState(false);
+  const [pinChangeError, setPinChangeError] = useState('');
+
+  // Withdrawal state
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState<number>(5000);
   const [withdrawMethod, setWithdrawMethod] = useState<
     'telebirr' | 'cbe_birr' | 'awash' | 'dashen' | 'abyssinia' | 'coop_oromia'
   >('telebirr');
   const [accountNumber, setAccountNumber] = useState('0911 45 87 23');
-  const [accountName, setAccountName] = useState('ዘበነ አስፋው (ዋና ገንቢ)');
+  const [accountName, setAccountName] = useState('ዘበነ አስፍዬ (ዋና ገንቢ)');
   const [isProcessing, setIsProcessing] = useState(false);
   const [successReceipt, setSuccessReceipt] = useState<WithdrawalTransaction | null>(null);
 
@@ -51,6 +74,58 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
     { id: 'abyssinia', name: 'አቢሲኒያ ባንክ (Bank of Abyssinia)', fee: '0% ክፍያ', color: 'bg-amber-600' },
     { id: 'coop_oromia', name: 'የኦሮሚያ ህብረት ስራ ባንክ (Coop Bank)', fee: '0% ክፍያ', color: 'bg-orange-600' },
   ];
+
+  // Handle PIN entry unlock
+  const handleUnlockSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const correctPin = getStoredCreatorPin();
+    if (inputPin.trim() === correctPin) {
+      audioService.playChime('success');
+      confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+      setIsUnlocked(true);
+      setPinError(false);
+      setInputPin('');
+    } else {
+      audioService.playChime('alert');
+      setPinError(true);
+      setTimeout(() => setPinError(false), 2000);
+    }
+  };
+
+  const handleLockVault = () => {
+    audioService.playChime('click');
+    setIsUnlocked(false);
+  };
+
+  const handleChangePinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinChangeError('');
+    const currentStored = getStoredCreatorPin();
+
+    if (currentPinCheck !== currentStored) {
+      setPinChangeError('የነበረው አሮጌ ሚስጥር ቁጥር ትክክል አይደለም!');
+      return;
+    }
+    if (newPin.length < 4) {
+      setPinChangeError('አዲሱ ሚስጥር ቁጥር ቢያንስ 4 ድጅት መሆን አለበት!');
+      return;
+    }
+    if (newPin !== confirmNewPin) {
+      setPinChangeError('አዲሶቹ ሚስጥር ቁጥሮች አልተመሳሰሉም!');
+      return;
+    }
+
+    saveCreatorPin(newPin);
+    audioService.playChime('success');
+    setPinChangeSuccess(true);
+    setTimeout(() => {
+      setPinChangeSuccess(false);
+      setIsChangePinOpen(false);
+      setCurrentPinCheck('');
+      setNewPin('');
+      setConfirmNewPin('');
+    }, 1500);
+  };
 
   const handleWithdrawSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +143,7 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
         amount: withdrawAmount,
         method: withdrawMethod,
         accountNumber,
-        accountName,
+        accountName: 'ዘበነ አስፍዬ (ዋና ገንቢ)',
         status: 'completed',
         date: 'የካቲት 28 ቀን 2018 ዓ.ም አሁን',
         reference: `${withdrawMethod.toUpperCase()}-PAYOUT-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -86,24 +161,140 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
 
       audioService.playChime('success');
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-    }, 1500);
+    }, 1200);
   };
 
+  // If locked, render the secure Authorization Vault
+  if (!isUnlocked) {
+    return (
+      <div className="max-w-md mx-auto my-8 bg-white rounded-3xl p-8 border border-stone-200 shadow-2xl space-y-6 text-center">
+        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center mx-auto shadow-lg ring-8 ring-amber-100">
+          <Lock className="w-10 h-10 text-stone-950" />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+            <ShieldAlert className="w-3.5 h-3.5 text-emerald-700" />
+            <span>የገንቢው የግልና ሚስጥራዊ የገቢ ካዝና</span>
+          </div>
+          <h2 className="text-xl font-black text-stone-900">
+            ሚስጥር ቁጥርዎን ያስገቡ
+          </h2>
+          <p className="text-xs text-stone-500 leading-relaxed">
+            የገንቢው (የአቶ ዘበነ አስፍዬ) የገቢና የኪስ ቦርሳ መረጃዎች በፍጹም ሌሎች ሰዎች እንዳያዩዋቸው የተቆለፉ ናቸው።
+          </p>
+        </div>
+
+        {/* PIN Entry Form */}
+        <form onSubmit={handleUnlockSubmit} className="space-y-4">
+          <div className="relative">
+            <input
+              type={showPinText ? 'text' : 'password'}
+              maxLength={8}
+              required
+              autoFocus
+              placeholder="••••"
+              value={inputPin}
+              onChange={(e) => setInputPin(e.target.value)}
+              className={`w-full text-center tracking-[0.5em] text-2xl font-black py-3 px-4 rounded-2xl border-2 transition focus:outline-none ${
+                pinError
+                  ? 'border-rose-500 bg-rose-50 text-rose-900 animate-shake'
+                  : 'border-stone-300 focus:border-emerald-600 bg-stone-50 text-stone-900'
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPinText(!showPinText)}
+              className="absolute right-3 top-3.5 text-stone-400 hover:text-stone-600 p-1"
+              title={showPinText ? 'ደብቅ' : 'አሳይ'}
+            >
+              {showPinText ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+
+          {pinError && (
+            <p className="text-xs font-bold text-rose-600 animate-pulse">
+              የተሳሳተ ሚስጥር ቁጥር ነው! እባክዎ በትክክል ያስገቡ።
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-3.5 bg-gradient-to-r from-emerald-800 to-emerald-950 hover:from-emerald-700 hover:to-emerald-900 text-white rounded-2xl font-black text-sm shadow-xl transition transform active:scale-95 flex items-center justify-center gap-2"
+          >
+            <KeyRound className="w-4 h-4 text-amber-300" />
+            <span>ካዝናውን ክፈት (Unlock Vault)</span>
+          </button>
+        </form>
+
+        <div className="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-[11px] text-amber-900">
+          <p className="font-semibold">
+            🔑 የመነሻ ሚስጥር ቁጥር፡ <strong>2026</strong>
+          </p>
+          <p className="text-[10px] text-amber-700 mt-0.5">
+            (አንዴ ከገቡ በኋላ በማንኛውም ሰዓት ወደ ፈለጉት ሚስጥር ቁጥር መቀየር ይችላሉ)
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Unlocked: Render the Creator's Full Private Dashboard
   return (
     <div className="space-y-6">
+      {/* Top Unlocked Security Bar */}
+      <div className="bg-emerald-900 text-white px-5 py-3 rounded-2xl shadow-sm flex flex-wrap items-center justify-between gap-3 border border-emerald-800">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-amber-400 text-stone-950 flex items-center justify-center font-bold">
+            <Unlock className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-xs sm:text-sm text-white">
+                የተረጋገጠ የገንቢ አካውንት፡ ዘበነ አስፍዬ (Zebene Asfye)
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700 text-amber-300 font-bold">
+                ክፍት ነው ✓
+              </span>
+            </div>
+            <p className="text-[11px] text-emerald-300">
+              ይህ መረጃ በሚስጥር ቁጥር የተጠበቀ የግል የገቢ ካዝና ነው
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsChangePinOpen(true)}
+            className="px-3 py-1.5 bg-emerald-800 hover:bg-emerald-700 text-amber-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border border-emerald-700"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>ሚስጥር ቁጥር ቀይር</span>
+          </button>
+
+          <button
+            onClick={handleLockVault}
+            className="px-3 py-1.5 bg-stone-900 hover:bg-black text-rose-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow"
+          >
+            <Lock className="w-3.5 h-3.5" />
+            <span>ካዝናውን ቆልፍ</span>
+          </button>
+        </div>
+      </div>
+
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-emerald-900 via-stone-900 to-amber-950 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/40 text-xs font-bold mb-1">
               <Sparkles className="w-4 h-4" />
-              <span>የገንቢው ዘላቂ ገቢና የኪስ ቦርሳ (Continuous Creator Revenue Engine)</span>
+              <span>የቀጥታ ስራ ላይ ያለ የፈጣሪ ገቢ ማዕከል (Live Production Mode)</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              የድህረገጹና አፕሊኬሽኑ ፈጣሪ የማያቋርጥ ገቢ ማዕከል
+              የገንቢው (አቶ ዘበነ አስፍዬ) የማያቋርጥ ገቢና የኪስ ቦርሳ
             </h2>
             <p className="text-xs sm:text-sm text-emerald-200/90 max-w-2xl">
-              ከኢንተርኔት ካምፓኒዎች (Ethio Telecom/Safaricom)፣ ከመንግስት ተቋማት፣ ከግብርና አገልግሎት አጠቃቀም እንዲሁም ላይክና ሼር ሲደረግ በቀጥታ የሚከማች ገቢ
+              ከቴሌኮም ኩባንያዎች፣ ከመንግስት ተቋማት፣ ከግብርና ግብይት እንዲሁም ላይክና ሼር ሲደረግ በቀጥታ የሚከማች ዘላቂ ገቢ
             </p>
           </div>
 
@@ -191,46 +382,6 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
         </div>
       </div>
 
-      {/* Revenue Breakdown & Active Monetization Mechanisms */}
-      <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-4">
-        <h3 className="text-base font-extrabold text-stone-900 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-emerald-700" />
-          <span>ገቢው እንዴት እንደተሰላና ያለማቋረጥ እንደሚፈስስ (How Monetization Works)</span>
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-2">
-            <div className="flex items-center gap-2 font-bold text-stone-900">
-              <span className="w-6 h-6 rounded-full bg-emerald-700 text-white flex items-center justify-center text-xs">1</span>
-              <span>የቴሌኮም ካምፓኒዎች የበይነ-መረብ ክፍፍል</span>
-            </div>
-            <p className="text-stone-600 leading-relaxed">
-              አርሶ አደሮችና ነጋዴዎች መተግበሪያውን ሲጠቀሙ የሚወጣው የበይነ-መረብ ትራፊክ በኢትዮ ቴሌኮምና ሳፋሪኮም በኩል 5% ለገንቢው የፈጠራ ስራ የሮያሊቲ ገቢ ሆኖ በየሰኮንዱ ገቢ ይደረጋል።
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-2">
-            <div className="flex items-center gap-2 font-bold text-stone-900">
-              <span className="w-6 h-6 rounded-full bg-blue-700 text-white flex items-center justify-center text-xs">2</span>
-              <span>ከተቋማትና ከባንኮች የሚከፈል ዓመታዊ ድጎማ</span>
-            </div>
-            <p className="text-stone-600 leading-relaxed">
-              ግብርና ሚኒስቴር፣ የኢትዮጵያ ምርት ገበያ (ECX) እና ባንኮች ስርዓቱ የግብርና ሰንሰለቱን በዲጂታል በማሳለጡ ለሲስተም አስተዳደርና ፈቃድ ቀጣይነት ያለው ክፍያ ይፈጽማሉ።
-            </p>
-          </div>
-
-          <div className="p-4 rounded-xl bg-stone-50 border border-stone-200 space-y-2">
-            <div className="flex items-center gap-2 font-bold text-stone-900">
-              <span className="w-6 h-6 rounded-full bg-rose-700 text-white flex items-center justify-center text-xs">3</span>
-              <span>በየላይኩ፣ በየሼሩና በየግብይቱ የሚታሰብ ገቢ</span>
-            </div>
-            <p className="text-stone-600 leading-relaxed">
-              በቀጥታ ገበያው ላይ እያንዳንዱ ምርት ላይክ ሲደረግ (+0.25 ብር)፣ ሼር ሲደረግ (+1.00 ብር)፣ እና ግብይት ሲፈጸም ጥቃቅን የፍትሃዊ ንግድ መዋጮ በቀጥታ ወደ ኪስ ቦርሳዎ ይገባል።
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Withdrawal History Ledger */}
       <div className="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm space-y-4">
         <div className="flex items-center justify-between border-b border-stone-100 pb-3">
@@ -243,42 +394,49 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead className="bg-stone-50 text-stone-600 font-bold border-b border-stone-200">
-              <tr>
-                <th className="p-3">ማጣቀሻ ቁጥር</th>
-                <th className="p-3">የወጣበት ቀን</th>
-                <th className="p-3">የክፍያ ሲስተም</th>
-                <th className="p-3">የተቀባይ አካውንት</th>
-                <th className="p-3">መጠን (ETB)</th>
-                <th className="p-3">ሁኔታ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100 font-medium">
-              {wallet.withdrawHistory.map((item) => (
-                <tr key={item.id} className="hover:bg-stone-50">
-                  <td className="p-3 font-mono text-emerald-800 font-bold">{item.reference}</td>
-                  <td className="p-3 text-stone-600">{item.date}</td>
-                  <td className="p-3 font-bold uppercase">{item.method}</td>
-                  <td className="p-3">
-                    <span className="font-bold text-stone-900">{item.accountName}</span>
-                    <span className="block text-[11px] text-stone-500 font-mono">{item.accountNumber}</span>
-                  </td>
-                  <td className="p-3 font-black text-emerald-900 text-sm">
-                    {item.amount.toLocaleString()} ብር
-                  </td>
-                  <td className="p-3">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      ተጠናቋል
-                    </span>
-                  </td>
+        {wallet.withdrawHistory.length === 0 ? (
+          <div className="p-8 text-center bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200 text-stone-500 text-xs space-y-1">
+            <p className="font-bold text-stone-700">የሙከራ መረጃዎች ጸድተው ለእውነተኛ ስራ ዝግጁ ሆነዋል!</p>
+            <p>አዲስ የገቢ ክፍያዎች ሲፈጸሙና ገንዘብ ሲያወጡ ህጋዊ የክፍያ ቫውቸሩ እዚህ ጋር በቅጽበት ይመዘገባል።</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead className="bg-stone-50 text-stone-600 font-bold border-b border-stone-200">
+                <tr>
+                  <th className="p-3">ማጣቀሻ ቁጥር</th>
+                  <th className="p-3">የወጣበት ቀን</th>
+                  <th className="p-3">የክፍያ ሲስተም</th>
+                  <th className="p-3">የተቀባይ አካውንት</th>
+                  <th className="p-3">መጠን (ETB)</th>
+                  <th className="p-3">ሁኔታ</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-stone-100 font-medium">
+                {wallet.withdrawHistory.map((item) => (
+                  <tr key={item.id} className="hover:bg-stone-50">
+                    <td className="p-3 font-mono text-emerald-800 font-bold">{item.reference}</td>
+                    <td className="p-3 text-stone-600">{item.date}</td>
+                    <td className="p-3 font-bold uppercase">{item.method}</td>
+                    <td className="p-3">
+                      <span className="font-bold text-stone-900">{item.accountName}</span>
+                      <span className="block text-[11px] text-stone-500 font-mono">{item.accountNumber}</span>
+                    </td>
+                    <td className="p-3 font-black text-emerald-900 text-sm">
+                      {item.amount.toLocaleString()} ብር
+                    </td>
+                    <td className="p-3">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        ተጠናቋል
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Withdrawal Modal */}
@@ -292,7 +450,7 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
                   <span>ገንዘብ ማውጫ (Instant Multi-Bank Payout)</span>
                 </h3>
                 <p className="text-xs text-emerald-200 mt-0.5">
-                  ያለ ምንም ገደብ በየትኛውም ባንክ ወይም በቴሌብር ማውጣት ይችላሉ
+                  ተጠቃሚ፡ ዘበነ አስፍዬ (ዋና ገንቢ)
                 </p>
               </div>
               <button
@@ -381,7 +539,7 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
                   </label>
                   <input
                     type="number"
-                    min="10"
+                    min="1"
                     max={wallet.balanceBirr}
                     required
                     value={withdrawAmount}
@@ -444,6 +602,93 @@ export const CreatorMonetizationView: React.FC<CreatorMonetizationViewProps> = (
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Change PIN Modal */}
+      {isChangePinOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 space-y-4 text-xs">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <h3 className="font-extrabold text-stone-900 text-sm flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-emerald-700" />
+                <span>ሚስጥር ቁጥር ቀይር (Change Secret PIN)</span>
+              </h3>
+              <button
+                onClick={() => setIsChangePinOpen(false)}
+                className="p-1 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleChangePinSubmit} className="space-y-3">
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">
+                  የነበረው አሮጌ ሚስጥር ቁጥር
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={currentPinCheck}
+                  onChange={(e) => setCurrentPinCheck(e.target.value)}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">
+                  አዲሱ ሚስጥር ቁጥር (ቢያንስ 4 ድጅት)
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value)}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-stone-700 mb-1">
+                  አዲሱን ሚስጥር ቁጥር በድጋሚ ያረጋግጡ
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={confirmNewPin}
+                  onChange={(e) => setConfirmNewPin(e.target.value)}
+                  className="w-full px-3 py-2 border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                />
+              </div>
+
+              {pinChangeError && (
+                <p className="text-rose-600 font-bold">{pinChangeError}</p>
+              )}
+
+              {pinChangeSuccess && (
+                <p className="text-emerald-700 font-bold">
+                  ሚስጥር ቁጥርዎ በተሳካ ሁኔታ ተቀይሯል!
+                </p>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setIsChangePinOpen(false)}
+                  className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-800 font-bold rounded-xl"
+                >
+                  ሰርዝ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl shadow"
+                >
+                  ቀይር
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -288,7 +288,7 @@ export default function App() {
             <span>{t.tabInstitutions || 'የተቋማት ትስስር'}</span>
           </button>
 
-          {/* Creator Royalties & Monetization Tab */}
+          {/* Creator Royalties & Monetization Tab - Secret Lock */}
           <button
             onClick={() => handleTabChange('creator')}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold whitespace-nowrap transition ${
@@ -296,11 +296,12 @@ export default function App() {
                 ? 'bg-amber-500 text-stone-950 shadow-md ring-2 ring-amber-400'
                 : 'text-stone-700 hover:bg-stone-100'
             }`}
+            title="የገንቢው የግል ካዝና (በሚስጥር ቁጥር የተቆለፈ)"
           >
             <Wallet className="w-4 h-4 text-emerald-800" />
             <span>{t.tabCreatorRevenue || 'የፈጣሪ ገቢና ወጪ'}</span>
-            <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-800 text-white font-mono">
-              {creatorWallet.balanceBirr.toLocaleString()} ብር
+            <span className="ml-1 text-[10px] px-2 py-0.5 rounded-full bg-stone-900 text-amber-300 font-bold">
+              🔒 ሚስጥራዊ
             </span>
           </button>
 

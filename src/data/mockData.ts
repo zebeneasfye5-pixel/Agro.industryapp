@@ -410,36 +410,15 @@ export const initialFarmerInquiries: FarmerInquiry[] = [
 ];
 
 export const initialCreatorWallet = {
-  balanceBirr: 84620.50,
-  totalEarnedBirr: 148900.00,
-  telecomRevenueBirr: 52400.00, // Ethio Telecom & Safaricom 5% data traffic allocation
-  institutionalSponsorshipBirr: 68000.00, // Ministry of Agriculture & ECX API licensing
-  engagementRevenueBirr: 28500.00, // Likes, shares, and transactions
-  totalLikes: 14280,
-  totalShares: 6840,
-  totalServiceTransactions: 3120,
-  withdrawHistory: [
-    {
-      id: 'WDR-9921',
-      amount: 25000,
-      method: 'telebirr' as const,
-      accountNumber: '0911 45 87 23',
-      accountName: 'ዘበነ አስፋው (የመድረኩ ዋና ኢንጂነር/ገንቢ)',
-      status: 'completed' as const,
-      date: 'የካቲት 20 ቀን 2018 ዓ.ም',
-      reference: 'TLB-PAYOUT-88392101',
-    },
-    {
-      id: 'WDR-9920',
-      amount: 39279.50,
-      method: 'cbe_birr' as const,
-      accountNumber: '1000 2341 8892',
-      accountName: 'ዘበነ አስፋው (የመድረኩ ዋና ኢንጂነር/ገንቢ)',
-      status: 'completed' as const,
-      date: 'የካቲት 10 ቀን 2018 ዓ.ም',
-      reference: 'CBE-PAYOUT-44910283',
-    },
-  ],
+  balanceBirr: 0.00,
+  totalEarnedBirr: 0.00,
+  telecomRevenueBirr: 0.00, // Ethio Telecom & Safaricom 5% data traffic allocation
+  institutionalSponsorshipBirr: 0.00, // Ministry of Agriculture & ECX API licensing
+  engagementRevenueBirr: 0.00, // Likes, shares, and transactions
+  totalLikes: 0,
+  totalShares: 0,
+  totalServiceTransactions: 0,
+  withdrawHistory: [],
 };
 
 export const initialInstitutionNodes = [
