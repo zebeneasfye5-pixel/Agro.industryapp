@@ -1,0 +1,6 @@
+{
+  "name": "ሀገር በቀል አርሶ አደር - Ethiopian Farmer Portal",
+  "description": "የኢትዮጵያ አርሶ አደሮች ዲጂታል መድረክ - ያለ ደላላ የቀጥታ ምርት ገበያ፣ የማዳበሪያ ተራ ክትትል፣ የመሬት ግብርና ክፍያ ደረሰኝ፣ እና ከመንግስት ጋር በቀጥታ በድምፅ እና በጂፒኤስ የመገናኛ አሰራር።",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
